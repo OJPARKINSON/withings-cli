@@ -7,11 +7,12 @@ import (
 	"os"
 
 	"github.com/ojparkinson/withings/internal/auth"
+	"github.com/ojparkinson/withings/internal/weight"
 	"github.com/spf13/cobra"
 )
 
 var signInCmd = &cobra.Command{
-	Use:   "auth signIn",
+	Use:   "signIn",
 	Short: "",
 	Run:   auth.SignIn,
 }
@@ -25,6 +26,7 @@ var authCmd = &cobra.Command{
 var weightCmd = &cobra.Command{
 	Use:   "weight",
 	Short: "Get current weight",
+	Run:   weight.Weight,
 }
 
 // rootCmd represents the base command when called without any subcommands

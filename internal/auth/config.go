@@ -3,19 +3,24 @@ package auth
 import (
 	"bytes"
 
-	"github.com/BurntSushi/toml"
+	toml "github.com/pelletier/go-toml/v2"
 )
 
 type Config struct {
-	AccessToken  string
-	RefreshToken string
-	age          string
-	scope        string
+	AccessToken  string `toml:"access_token"`
+	RefreshToken string `toml:"refresh_token"`
+	UserId       string `toml:"user_id"`
+	ExpiresAt    int64  `toml:"expires_at"`
 }
 
-func DecodeConfig(tomlData string) (toml.MetaData, error) {
+func DecodeConfig(tomlData []byte) (Config, error) {
 	var conf Config
-	return toml.Decode(tomlData, &conf)
+	err := toml.Unmarshal(tomlData, &conf)
+	if err != nil {
+		return conf, nil
+	}
+
+	return conf, nil
 }
 
 func EncodeConfig(tomlData Config) ([]byte, error) {
