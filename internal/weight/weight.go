@@ -49,11 +49,12 @@ func Weight(cmd *cobra.Command, args []string) {
 		measureGroups = append(measureGroups, result.Body.MeasureGrps...)
 	}
 
+	// add a flag for --verbose to just print the verbose data
 	chartPrintMeasurements(measureGroups)
 }
 
 // in the future when there is a local cache it should use that first
-func fetchMeasurements(from int64, accessToken string, offset int) *MeasureResponse {
+func fetchMeasurements(from int64, accessToken string, offset int) MeasureResponse {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://wbsapi.withings.net/measure?action=getmeas&meastypes=1,6&category=1&lastupdate=%d&offset=%d", from, offset), nil)
 	if err != nil {
@@ -75,7 +76,7 @@ func fetchMeasurements(from int64, accessToken string, offset int) *MeasureRespo
 		log.Fatalf("API error, status: %d", result.Status)
 	}
 
-	return &result
+	return result
 }
 
 func verbosePrintMeasurements(result *MeasureResponse) {
@@ -93,8 +94,26 @@ func verbosePrintMeasurements(result *MeasureResponse) {
 }
 
 func chartPrintMeasurements(measureGroups []MeasureGroup) {
+	tableData := []timeserieslinechart.TimePoint{}
 
-	tslc := timeserieslinechart.New(150, 15, timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
+	minVal, maxVal := math.MaxFloat64, -math.MaxFloat64
+
+	for _, grp := range measureGroups {
+		for _, m := range grp.Measures {
+			if m.Type == 1 {
+				v := m.RealValue()
+				minVal = min(minVal, v)
+				maxVal = max(maxVal, v)
+
+				tableData = append(tableData, timeserieslinechart.TimePoint{
+					Time:  time.Unix(grp.Date, 0),
+					Value: m.RealValue(),
+				})
+			}
+		}
+	}
+
+	tslc := timeserieslinechart.New(150, 15, timeserieslinechart.WithYRange(minVal, maxVal), timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
 		return fmt.Sprintf("%.1f kg", v)
 	}))
 
@@ -103,18 +122,10 @@ func chartPrintMeasurements(measureGroups []MeasureGroup) {
 		return t.Format("01/06")
 	}
 
-	for _, grp := range measureGroups {
-		for _, m := range grp.Measures {
-			if m.Type == 1 {
-				tslc.Push(timeserieslinechart.TimePoint{
-					Time:  time.Unix(grp.Date, 0),
-					Value: m.RealValue(),
-				})
-			}
-		}
+	for _, point := range tableData {
+		tslc.Push(point)
 	}
 
-	tslc.AutoMinY = true
 	tslc.DrawBraille()
 	fmt.Println(tslc.View())
 }
