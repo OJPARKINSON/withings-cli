@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
 	"github.com/ojparkinson/withings/internal/auth"
 	"github.com/spf13/cobra"
 )
@@ -33,17 +34,38 @@ func Weight(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	moreMeasurements := true
+	offset := 0
+	initialStart := time.Date(2001, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()
+
+	var measureGroups []MeasureGroup
+
+	for moreMeasurements {
+		result := fetchMeasurements(initialStart, withingsConfig.AccessToken, offset)
+
+		moreMeasurements = result.Body.More > 0
+		offset = result.Body.Offset
+
+		measureGroups = append(measureGroups, result.Body.MeasureGrps...)
+	}
+
+	chartPrintMeasurements(measureGroups)
+}
+
+// in the future when there is a local cache it should use that first
+func fetchMeasurements(from int64, accessToken string, offset int) *MeasureResponse {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://wbsapi.withings.net/measure?action=getmeas&meastypes=1,6&category=1&lastupdate=%d", time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://wbsapi.withings.net/measure?action=getmeas&meastypes=1,6&category=1&lastupdate=%d&offset=%d", from, offset), nil)
 	if err != nil {
 		log.Panic("✓ Failed to create request")
 	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", withingsConfig.AccessToken))
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Panic("✓ Failed to fetch measurements")
 	}
+
 	var result MeasureResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		log.Fatalf("Failed to decode response: %v", err)
@@ -53,6 +75,10 @@ func Weight(cmd *cobra.Command, args []string) {
 		log.Fatalf("API error, status: %d", result.Status)
 	}
 
+	return &result
+}
+
+func verbosePrintMeasurements(result *MeasureResponse) {
 	for _, grp := range result.Body.MeasureGrps {
 		t := time.Unix(grp.Date, 0)
 		for _, m := range grp.Measures {
@@ -64,45 +90,33 @@ func Weight(cmd *cobra.Command, args []string) {
 			}
 		}
 	}
+}
 
-	fmt.Println(result.Body.More)
-	fmt.Println(result.Body.Offset)
+func chartPrintMeasurements(measureGroups []MeasureGroup) {
 
-	if result.Body.More != 0 {
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", fmt.Sprintf("https://wbsapi.withings.net/measure?action=getmeas&meastypes=1,6&category=1&lastupdate=%d&offset=%d", time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC).Unix(), result.Body.Offset), nil)
-		if err != nil {
-			log.Panic("✓ Failed to create request")
-		}
+	tslc := timeserieslinechart.New(150, 15, timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
+		return fmt.Sprintf("%.1f kg", v)
+	}))
 
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", withingsConfig.AccessToken))
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Panic("✓ Failed to fetch measurements")
-		}
-		var result MeasureResponse
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			log.Fatalf("Failed to decode response: %v", err)
-		}
+	tslc.XLabelFormatter = func(i int, v float64) string {
+		t := time.Unix(int64(v), 0)
+		return t.Format("01/06")
+	}
 
-		if result.Status != 0 {
-			log.Fatalf("API error, status: %d", result.Status)
-		}
-
-		for _, grp := range result.Body.MeasureGrps {
-			t := time.Unix(grp.Date, 0)
-			for _, m := range grp.Measures {
-				switch m.Type {
-				case 1:
-					fmt.Printf("%s  Weight: %.1f kg\n", t.Format("2006-01-02"), m.RealValue())
-				case 6:
-					fmt.Printf("%s  Fat:    %.1f%%\n", t.Format("2006-01-02"), m.RealValue())
-				}
+	for _, grp := range measureGroups {
+		for _, m := range grp.Measures {
+			if m.Type == 1 {
+				tslc.Push(timeserieslinechart.TimePoint{
+					Time:  time.Unix(grp.Date, 0),
+					Value: m.RealValue(),
+				})
 			}
 		}
-		fmt.Println(result.Body.More)
-		fmt.Println(result.Body.Offset)
 	}
+
+	tslc.AutoMinY = true
+	tslc.DrawBraille()
+	fmt.Println(tslc.View())
 }
 
 type MeasureResponse struct {

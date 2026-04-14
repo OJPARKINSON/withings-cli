@@ -16,8 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var clientId = ""
-var clientSecret = ""
 var reDirectUrl = "http://localhost:8080/callback"
 
 func SignIn(cmd *cobra.Command, args []string) {
@@ -70,6 +68,8 @@ func SignIn(cmd *cobra.Command, args []string) {
 
 	var scope = rand.Text()
 
+	clientId := os.Getenv("CLIENT_ID")
+
 	fmt.Printf("https://account.withings.com/oauth2_user/authorize2?response_type=code&client_id=%s&scope=user.info,user.metrics,user.activity&redirect_uri=%s&state=%s", clientId, reDirectUrl, scope)
 
 	select {
@@ -79,8 +79,8 @@ func SignIn(cmd *cobra.Command, args []string) {
 		res, err := http.PostForm("https://wbsapi.withings.net/v2/oauth2", url.Values{
 			"action":        {"requesttoken"},
 			"grant_type":    {"authorization_code"},
-			"client_id":     {clientId},
-			"client_secret": {clientSecret},
+			"client_id":     {os.Getenv("CLIENT_ID")},
+			"client_secret": {os.Getenv("CLIENT_SECRET")},
 			"code":          {code},
 			"redirect_uri":  {reDirectUrl},
 		})
@@ -113,7 +113,7 @@ func SignIn(cmd *cobra.Command, args []string) {
 		}
 
 		os.WriteFile(withingsPath, data, 0600)
-		fmt.Println("✓ Logged in successfully")
+		fmt.Println("\n ✓ Logged in successfully")
 
 	case err := <-errCh:
 		log.Fatal(err)
