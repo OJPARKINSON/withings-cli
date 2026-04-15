@@ -1,13 +1,9 @@
 package weight
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
-	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
@@ -16,22 +12,10 @@ import (
 )
 
 func Weight(cmd *cobra.Command, args []string) {
-	home, err := os.UserHomeDir()
+
+	accessToken, err := auth.LoadToken()
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	configDirPath := filepath.Join(home, ".config")
-	withingsPath := filepath.Join(configDirPath, "withings-cli.toml")
-
-	withingsConfigBytes, _ := os.ReadFile(withingsPath)
-
-	withingsConfig, _ := auth.DecodeConfig(withingsConfigBytes)
-
-	if withingsConfig.ExpiresAt < time.Now().Unix() {
-		// Turn into auth fun and use refresh rather than error. Need to check if expired and if refresh exists
-		log.Panic("You are not logged in")
-		return
+		log.Fatal("Failed to load Authentication")
 	}
 
 	moreMeasurements := true
@@ -41,7 +25,7 @@ func Weight(cmd *cobra.Command, args []string) {
 	var measureGroups []MeasureGroup
 
 	for moreMeasurements {
-		result := fetchMeasurements(initialStart, withingsConfig.AccessToken, offset)
+		result := fetchMeasurements(initialStart, accessToken, offset)
 
 		moreMeasurements = result.Body.More > 0
 		offset = result.Body.Offset
@@ -51,32 +35,6 @@ func Weight(cmd *cobra.Command, args []string) {
 
 	// add a flag for --verbose to just print the verbose data
 	chartPrintMeasurements(measureGroups)
-}
-
-// in the future when there is a local cache it should use that first
-func fetchMeasurements(from int64, accessToken string, offset int) MeasureResponse {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://wbsapi.withings.net/measure?action=getmeas&meastypes=1,6&category=1&lastupdate=%d&offset=%d", from, offset), nil)
-	if err != nil {
-		log.Panic("✓ Failed to create request")
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Panic("✓ Failed to fetch measurements")
-	}
-
-	var result MeasureResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Fatalf("Failed to decode response: %v", err)
-	}
-
-	if result.Status != 0 {
-		log.Fatalf("API error, status: %d", result.Status)
-	}
-
-	return result
 }
 
 func verbosePrintMeasurements(result *MeasureResponse) {
@@ -128,45 +86,4 @@ func chartPrintMeasurements(measureGroups []MeasureGroup) {
 
 	tslc.DrawBraille()
 	fmt.Println(tslc.View())
-}
-
-type MeasureResponse struct {
-	Status int         `json:"status"`
-	Body   MeasureBody `json:"body"`
-}
-
-type MeasureBody struct {
-	UpdateTime  int64          `json:"updatetime"`
-	Timezone    string         `json:"timezone"`
-	MeasureGrps []MeasureGroup `json:"measuregrps"`
-	More        int            `json:"more"`
-	Offset      int            `json:"offset"`
-}
-
-type MeasureGroup struct {
-	GrpID    int64     `json:"grpid"`
-	Attrib   int       `json:"attrib"`
-	Date     int64     `json:"date"`
-	Created  int64     `json:"created"`
-	Modified int64     `json:"modified"`
-	Category int       `json:"category"`
-	DeviceID string    `json:"deviceid"`
-	Measures []Measure `json:"measures"`
-	ModelID  *int      `json:"modelid"`
-	Model    *string   `json:"model"`
-	Comment  *string   `json:"comment"`
-}
-
-type Measure struct {
-	Value int `json:"value"`
-	Type  int `json:"type"`
-	Unit  int `json:"unit"`
-	Algo  int `json:"algo"`
-	FM    int `json:"fm"`
-}
-
-// RealValue converts the Withings value/unit encoding to a float.
-// e.g. value=118235, unit=-3 → 118.235
-func (m Measure) RealValue() float64 {
-	return float64(m.Value) * math.Pow(10, float64(m.Unit))
 }
