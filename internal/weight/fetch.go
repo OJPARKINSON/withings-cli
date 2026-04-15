@@ -5,7 +5,33 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 )
+
+func saveMeasurements(mResp MeasureResponse) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic("x failed to get home dir")
+	}
+
+	var configDirPath = filepath.Join(home, ".config")
+	var withingsStorePath = filepath.Join(configDirPath, "withings/measurements.json")
+
+	file, err := os.ReadFile(withingsStorePath)
+
+	var measurements []Measure
+
+	if err := json.Unmarshal(file, &measurements); err != nil {
+		log.Panic()
+	}
+
+	for _, measure := range measurements {
+		measurements = append(measurements, measure)
+	}
+
+	// os.WriteFile(withingsStorePath, )
+}
 
 // in the future when there is a local cache it should use that first
 func fetchMeasurements(from int64, accessToken string, offset int) MeasureResponse {

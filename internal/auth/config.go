@@ -22,9 +22,9 @@ func configPath() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	var configDirPath = filepath.Join(home, ".config")
-	var withingsPath = filepath.Join(configDirPath, "withings-cli.toml")
+	var withingsPath = filepath.Join(configDirPath, "withings/withings-cli.toml")
 
 	return withingsPath
 }
