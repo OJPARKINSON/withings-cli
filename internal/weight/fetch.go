@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ojparkinson/withings/internal/auth"
 )
 
 func saveMeasurements(mResp MeasureResponse) {
@@ -69,7 +70,7 @@ func fetchMeasurements(from int64, accessToken string, offset int) MeasureRespon
 
 	saveMeasurements(result)
 
-	
+	auth.UpdateLastUpdated(time.Now().Unix())
 
 	return result
 }
