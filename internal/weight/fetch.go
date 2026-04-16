@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
+
 )
 
 func saveMeasurements(mResp MeasureResponse) {
@@ -16,21 +18,26 @@ func saveMeasurements(mResp MeasureResponse) {
 	}
 
 	var configDirPath = filepath.Join(home, ".config")
-	var withingsStorePath = filepath.Join(configDirPath, "withings/measurements.json")
-
-	file, err := os.ReadFile(withingsStorePath)
+	var withingsStorePath = filepath.Join(configDirPath, "withings", "measurements.json")
 
 	var measurements []Measure
 
-	if err := json.Unmarshal(file, &measurements); err != nil {
-		log.Panic()
+	file, err := os.ReadFile(withingsStorePath)
+	if err != nil && len(file) > 0 {
+		if err := json.Unmarshal(file, &measurements); err != nil {
+			log.Panic(err)
+		}
 	}
 
-	for _, measure := range measurements {
-		measurements = append(measurements, measure)
+	for _, grp := range mResp.Body.MeasureGrps {
+		measurements = append(measurements, grp.Measures...)
 	}
 
-	// os.WriteFile(withingsStorePath, )
+	data, err := json.Marshal(measurements)
+	if err != nil {
+		log.Panic(err)
+	}
+	os.WriteFile(withingsStorePath, data, 0644)
 }
 
 // in the future when there is a local cache it should use that first
@@ -42,11 +49,14 @@ func fetchMeasurements(from int64, accessToken string, offset int) MeasureRespon
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
+	now := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Panic("✗ Failed to fetch measurements")
 	}
 	defer resp.Body.Close()
+
+	fmt.Println("\n", time.Since(now))
 
 	var result MeasureResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -56,6 +66,10 @@ func fetchMeasurements(from int64, accessToken string, offset int) MeasureRespon
 	if result.Status != 0 {
 		log.Fatalf("API error, status: %d", result.Status)
 	}
+
+	saveMeasurements(result)
+
+	
 
 	return result
 }

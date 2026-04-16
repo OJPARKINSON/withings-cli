@@ -15,6 +15,7 @@ type Config struct {
 	RefreshToken string `toml:"refresh_token"`
 	UserId       string `toml:"user_id"`
 	ExpiresAt    int64  `toml:"expires_at"`
+	lastUpdated int64 `toml:"last_updated"`
 }
 
 func configPath() string {
@@ -22,11 +23,23 @@ func configPath() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	var configDirPath = filepath.Join(home, ".config")
-	var withingsPath = filepath.Join(configDirPath, "withings/withings-cli.toml")
+
+	var configDirPath = filepath.Join(home, ".config", "withings")
+	os.MkdirAll(configDirPath, 0755)
+	var withingsPath = filepath.Join(configDirPath, "withings-cli.toml")
 
 	return withingsPath
+}
+
+func UpdateLastUpdated(lastUpdated int64){
+	config, err := loadConfig()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	config.lastUpdated = lastUpdated
+
+	writeConfig(config)
 }
 
 func writeConfig(cfg *Config) {

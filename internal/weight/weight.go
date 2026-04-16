@@ -20,7 +20,7 @@ func Weight(cmd *cobra.Command, args []string) {
 
 	moreMeasurements := true
 	offset := 0
-	initialStart := time.Date(2001, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()
+	initialStart := time.Now().Add(time.Duration(-48) * time.Hour).Unix()
 
 	var measureGroups []MeasureGroup
 
@@ -37,19 +37,6 @@ func Weight(cmd *cobra.Command, args []string) {
 	chartPrintMeasurements(measureGroups)
 }
 
-func verbosePrintMeasurements(result *MeasureResponse) {
-	for _, grp := range result.Body.MeasureGrps {
-		t := time.Unix(grp.Date, 0)
-		for _, m := range grp.Measures {
-			switch m.Type {
-			case 1:
-				fmt.Printf("%s  Weight: %.1f kg\n", t.Format("2006-01-02"), m.RealValue())
-			case 6:
-				fmt.Printf("%s  Fat:    %.1f%%\n", t.Format("2006-01-02"), m.RealValue())
-			}
-		}
-	}
-}
 
 func chartPrintMeasurements(measureGroups []MeasureGroup) {
 	tableData := []timeserieslinechart.TimePoint{}
@@ -71,7 +58,7 @@ func chartPrintMeasurements(measureGroups []MeasureGroup) {
 		}
 	}
 
-	tslc := timeserieslinechart.New(150, 15, timeserieslinechart.WithYRange(minVal, maxVal), timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
+	tslc := timeserieslinechart.New(50, 5, timeserieslinechart.WithYRange(minVal, maxVal), timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
 		return fmt.Sprintf("%.1f kg", v)
 	}))
 
