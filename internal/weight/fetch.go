@@ -21,7 +21,7 @@ func saveMeasurements(mResp MeasureResponse) {
 	var configDirPath = filepath.Join(home, ".config")
 	var withingsStorePath = filepath.Join(configDirPath, "withings", "measurements.json")
 
-	var measurements []Measure
+   	var measurements []Measure
 
 	file, err := os.ReadFile(withingsStorePath)
 	if err != nil && len(file) > 0 {
@@ -41,6 +41,29 @@ func saveMeasurements(mResp MeasureResponse) {
 	os.WriteFile(withingsStorePath, data, 0644)
 }
 
+func loadMeasurements() []Measure {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic("x failed to get home dir")
+	}
+
+	var configDirPath = filepath.Join(home, ".config")
+	var withingsStorePath = filepath.Join(configDirPath, "withings", "measurements.json")
+
+	rawMeasurements, err := os.ReadFile(withingsStorePath)
+	if err != nil {
+		log.Panic("failed to read withingsStore")
+	}
+
+	var measurements []Measure
+ 	err = json.Unmarshal(rawMeasurements, &measurements)
+	if err != nil {
+		log.Panic("failed to Unmarshal")
+	}
+
+	return measurements
+}
+
 // in the future when there is a local cache it should use that first
 func fetchMeasurements(from int64, accessToken string, offset int) MeasureResponse {
 	client := &http.Client{}
@@ -57,7 +80,7 @@ func fetchMeasurements(from int64, accessToken string, offset int) MeasureRespon
 	}
 	defer resp.Body.Close()
 
-	fmt.Println("\n", time.Since(now))
+	fmt.Println(time.Since(now))
 
 	var result MeasureResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -73,4 +96,5 @@ func fetchMeasurements(from int64, accessToken string, offset int) MeasureRespon
 	auth.UpdateLastUpdated(time.Now().Unix())
 
 	return result
+
 }

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -54,8 +53,6 @@ func writeConfig(cfg *Config) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("oath ")
 }
 
 func loadConfig() (*Config, error) {
