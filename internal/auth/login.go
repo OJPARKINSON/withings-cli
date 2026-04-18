@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -22,19 +21,16 @@ func SignIn(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	configDirPath := filepath.Join(home, ".config")
-
-	configDir, err := os.ReadDir(configDirPath)
-	if err != nil {
-		log.Fatal(err)
-	}
+	configDirPath := filepath.Join(home, ".config", "withings")
 
 	withingsPath := filepath.Join(configDirPath, "withings-cli.toml")
-	if slices.ContainsFunc(configDir, func(dir os.DirEntry) bool { return dir.Name() == "withings-cli.toml" }) {
+	if withingsConfigBytes, err := os.ReadFile(withingsPath); err == nil {
 
-		withingsConfigBytes, _ := os.ReadFile(withingsPath)
-
-		withingsConfig, _ := decodeConfig(withingsConfigBytes)
+		fmt.Println(withingsConfigBytes)
+		withingsConfig, err := decodeConfig(withingsConfigBytes)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		if withingsConfig.ExpiresAt > time.Now().Unix() {
 			fmt.Println("✓ You are logged in")
@@ -52,7 +48,7 @@ func SignIn(cmd *cobra.Command, args []string) {
 			errCh <- fmt.Errorf("no code in callback")
 			fmt.Fprintf(w, "Error: no code received. Close this tab.")
 			return
-		}		
+		}
 		fmt.Fprintf(w, "✓ Authenticated! You can close this tab.")
 		codeCh <- code
 	})

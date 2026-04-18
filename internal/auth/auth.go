@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -18,13 +19,16 @@ func Auth(cmd *cobra.Command, args []string) {}
 func LoadToken() (string, error) {
 	config, err := loadConfig()
 	if err != nil {
-		log.Fatal("Auth failed please try login first")
+		log.Fatal("Auth failed please try login first, ", err)
 	}
+
+	expiresTime := time.Unix(config.ExpiresAt, 0)
+	fmt.Println(expiresTime,  time.Now())
 
 	if config.ExpiresAt < time.Now().Unix() {
 		config, err := refresh(context.Background(), config.RefreshToken)
 		if err != nil {
-			log.Fatal("Failed to refresh please try login first")
+			log.Fatal("Failed to refresh please try login first, ", err)
 		}
 
 		return config.AccessToken, nil

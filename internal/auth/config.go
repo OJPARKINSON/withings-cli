@@ -12,9 +12,9 @@ import (
 type Config struct {
 	AccessToken  string `toml:"access_token"`
 	RefreshToken string `toml:"refresh_token"`
-	UserId       string `toml:"user_id"`
+	UserId       int64  `toml:"user_id"`
 	ExpiresAt    int64  `toml:"expires_at"`
-	lastUpdated int64 `toml:"last_updated"`
+	lastUpdated  int64  `toml:"last_updated"`
 }
 
 func configPath() string {
@@ -30,7 +30,7 @@ func configPath() string {
 	return withingsPath
 }
 
-func UpdateLastUpdated(lastUpdated int64){
+func UpdateLastUpdated(lastUpdated int64) {
 	config, err := loadConfig()
 	if err != nil {
 		log.Panic(err)
