@@ -71,7 +71,7 @@ func doTokenRequest(ctx context.Context, params url.Values) (*Config, error) {
 	}
 
 	config := &Config{
-		UserId:       wResp.Body.UserID,
+		UserId:      wResp.Body.UserID.String(),
 		AccessToken:  wResp.Body.AccessToken,
 		RefreshToken: wResp.Body.RefreshToken,
 		ExpiresAt:    time.Now().Unix() + wResp.Body.ExpiresIn,
@@ -89,7 +89,7 @@ type WithingsTokenResponse struct {
 }
 
 type WithingsTokenBody struct {
-	UserID       string  `json:"userid"`
+	UserID       json.Number  `json:"userid"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"`

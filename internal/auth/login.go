@@ -25,6 +25,7 @@ func SignIn(cmd *cobra.Command, args []string) {
 
 	withingsPath := filepath.Join(configDirPath, "withings-cli.toml")
 	if withingsConfigBytes, err := os.ReadFile(withingsPath); err == nil {
+
 		withingsConfig, err := decodeConfig(withingsConfigBytes)
 		if err != nil {
 			log.Fatal(err)
@@ -32,6 +33,15 @@ func SignIn(cmd *cobra.Command, args []string) {
 
 		if withingsConfig.ExpiresAt > time.Now().Unix() {
 			fmt.Println("✓ You are logged in")
+			return
+		} else {
+			_, err := refresh(context.Background(), withingsConfig.RefreshToken)
+			if err != nil {
+				log.Fatal("failed to refresh token, ", err)
+			}
+
+			fmt.Println("refreshed token")
+
 			return
 		}
 	}
