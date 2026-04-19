@@ -25,8 +25,6 @@ func SignIn(cmd *cobra.Command, args []string) {
 
 	withingsPath := filepath.Join(configDirPath, "withings-cli.toml")
 	if withingsConfigBytes, err := os.ReadFile(withingsPath); err == nil {
-
-		fmt.Println(withingsConfigBytes)
 		withingsConfig, err := decodeConfig(withingsConfigBytes)
 		if err != nil {
 			log.Fatal(err)

@@ -12,7 +12,7 @@ import (
 type Config struct {
 	AccessToken  string `toml:"access_token"`
 	RefreshToken string `toml:"refresh_token"`
-	UserId       int64  `toml:"user_id"`
+	UserId      string  `toml:"user_id"`
 	ExpiresAt    int64  `toml:"expires_at"`
 	lastUpdated  int64  `toml:"last_updated"`
 }

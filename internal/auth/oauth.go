@@ -89,7 +89,7 @@ type WithingsTokenResponse struct {
 }
 
 type WithingsTokenBody struct {
-	UserID       int64  `json:"userid"`
+	UserID       string  `json:"userid"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"`
