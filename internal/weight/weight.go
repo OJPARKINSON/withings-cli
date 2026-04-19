@@ -21,10 +21,10 @@ func Weight(cmd *cobra.Command, args []string) {
 
 	moreMeasurements := true
 	offset := 0
+
+	// make it an option to pass in a week, month year, 2-year, all time
 	initialStart := time.Date(1999, 01, 01, 01, 01, 01,01, time.UTC).Unix()
 
-
-	// initialStart := time.Now().Add(time.Duration(-2000) * time.Hour).Unix()
 
 	var measureGroups []MeasureGroup
 

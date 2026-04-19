@@ -73,14 +73,12 @@ func fetchMeasurements(from int64, accessToken string, offset int) MeasureRespon
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
-	now := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Panic("✗ Failed to fetch measurements")
 	}
 	defer resp.Body.Close()
 
-	fmt.Println(time.Since(now))
 
 	var result MeasureResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
