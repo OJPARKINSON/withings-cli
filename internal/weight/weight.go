@@ -2,40 +2,17 @@ package weight
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"time"
 
 	"github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
-	"github.com/ojparkinson/withings/internal/auth"
 	"github.com/spf13/cobra"
 )
 
-// weight should only be concerned with getting the first 
+// weight should only be concerned with getting the first
 func Weight(cmd *cobra.Command, args []string) {
+	measureGroups := fetchMeasurements()
 
-	accessToken, err := auth.LoadToken()
-	if err != nil {
-		log.Fatal("Failed to load Authentication")
-	}
-
-	moreMeasurements := true
-	offset := 0
-
-	// make it an option to pass in a week, month year, 2-year, all time
-	initialStart := time.Date(1999, 01, 01, 01, 01, 01,01, time.UTC).Unix()
-
-
-	var measureGroups []MeasureGroup
-
-	for moreMeasurements {
-		result := fetchMeasurements(initialStart, accessToken, offset)
-
-		moreMeasurements = result.Body.More > 0
-		offset = result.Body.Offset
-
-		measureGroups = append(measureGroups, result.Body.MeasureGrps...)
-	}
 
 	// add a flag for --verbose to just print the verbose data
 	chartPrintMeasurements(measureGroups)

@@ -64,8 +64,35 @@ func loadMeasurements() []Measure {
 	return measurements
 }
 
+func fetchMeasurements() []MeasureGroup {
+	accessToken, err := auth.LoadToken()
+	if err != nil {
+		log.Fatal("Failed to load Authentication")
+	}
+
+	moreMeasurements := true
+	offset := 0
+
+	// make it an option to pass in a week, month year, 2-year, all time
+	initialStart := time.Date(1999, 01, 01, 01, 01, 01,01, time.UTC).Unix()
+
+
+	var measureGroups []MeasureGroup
+
+	for moreMeasurements {
+		result := fetchMeasurement(initialStart, accessToken, offset)
+
+		moreMeasurements = result.Body.More > 0
+		offset = result.Body.Offset
+
+		measureGroups = append(measureGroups, result.Body.MeasureGrps...)
+	}
+
+	return measureGroups
+}
+
 // in the future when there is a local cache it should use that first
-func fetchMeasurements(from int64, accessToken string, offset int) MeasureResponse {
+func fetchMeasurement(from int64, accessToken string, offset int) MeasureResponse {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://wbsapi.withings.net/measure?action=getmeas&meastypes=1,6&category=1&lastupdate=%d&offset=%d", from, offset), nil)
 	if err != nil {
