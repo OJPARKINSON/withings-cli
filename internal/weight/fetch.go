@@ -21,7 +21,7 @@ func saveMeasurements(mResp MeasureResponse) {
 	var configDirPath = filepath.Join(home, ".config")
 	var withingsStorePath = filepath.Join(configDirPath, "withings", "measurements.json")
 
-   	var measurements []Measure
+	var measurements []Measure
 
 	file, err := os.ReadFile(withingsStorePath)
 	if err != nil && len(file) > 0 {
@@ -56,7 +56,7 @@ func loadMeasurements() []Measure {
 	}
 
 	var measurements []Measure
- 	err = json.Unmarshal(rawMeasurements, &measurements)
+	err = json.Unmarshal(rawMeasurements, &measurements)
 	if err != nil {
 		log.Panic("failed to Unmarshal")
 	}
@@ -64,7 +64,7 @@ func loadMeasurements() []Measure {
 	return measurements
 }
 
-func fetchMeasurements() []MeasureGroup {
+func fetchMeasurements(dateFrom time.Time) []MeasureGroup {
 	accessToken, err := auth.LoadToken()
 	if err != nil {
 		log.Fatal("Failed to load Authentication")
@@ -73,14 +73,10 @@ func fetchMeasurements() []MeasureGroup {
 	moreMeasurements := true
 	offset := 0
 
-	// make it an option to pass in a week, month year, 2-year, all time
-	initialStart := time.Date(1999, 01, 01, 01, 01, 01,01, time.UTC).Unix()
-
-
 	var measureGroups []MeasureGroup
 
 	for moreMeasurements {
-		result := fetchMeasurement(initialStart, accessToken, offset)
+		result := fetchMeasurement(dateFrom.Unix(), accessToken, offset)
 
 		moreMeasurements = result.Body.More > 0
 		offset = result.Body.Offset
@@ -105,7 +101,6 @@ func fetchMeasurement(from int64, accessToken string, offset int) MeasureRespons
 		log.Panic("✗ Failed to fetch measurements")
 	}
 	defer resp.Body.Close()
-
 
 	var result MeasureResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {

@@ -62,4 +62,5 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	weightCmd.Flags().StringP("range", "r", "all", "Data range - month, year, 2year, all - not required")
 }

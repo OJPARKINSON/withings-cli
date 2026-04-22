@@ -1,61 +1,33 @@
 package weight
 
 import (
-	"fmt"
-	"math"
 	"time"
 
-	"github.com/NimbleMarkets/ntcharts/linechart/timeserieslinechart"
 	"github.com/spf13/cobra"
 )
 
 // weight should only be concerned with getting the first
 func Weight(cmd *cobra.Command, args []string) {
-	measureGroups := fetchMeasurements()
+	timeRange, _ := cmd.Flags().GetString("range")
+	dateFrom := getDateFrom(timeRange)
 
+	measureGroups := fetchMeasurements(dateFrom)
 
-	// add a flag for --verbose to just print the verbose data
 	chartPrintMeasurements(measureGroups)
 }
 
-
-func chartPrintMeasurements(measureGroups []MeasureGroup) {
-	tableData := []timeserieslinechart.TimePoint{}
-
-	minVal, maxVal := math.MaxFloat64, -math.MaxFloat64
-
-	for _, grp := range measureGroups {
-		for _, m := range grp.Measures {
-			if m.Type == 1 {
-				v := m.RealValue()
-				minVal = min(minVal, v)
-				maxVal = max(maxVal, v)
-
-				tableData = append(tableData, timeserieslinechart.TimePoint{
-					Time:  time.Unix(grp.Date, 0),
-					Value: m.RealValue(),
-				})
-			}
-		}
+func getDateFrom(timeRange string) time.Time {
+	switch timeRange {
+	case "month":
+		return time.Now().AddDate(0, -1, 0)
+	case "year":
+		return time.Now().AddDate(-1, 0, 0)
+	case "2year":
+		return time.Now().AddDate(-2, 0, 0)
+	case "all":
+	default:
+		return time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC)
 	}
 
-	margin := (maxVal - minVal) * 0.05
-	minVal -= margin
-	maxVal += margin
-
-	tslc := timeserieslinechart.New(50, 15, timeserieslinechart.WithYRange(minVal, maxVal), timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
-		return fmt.Sprintf("%.1f kg", v)
-	}))
-
-	tslc.XLabelFormatter = func(i int, v float64) string {
-		t := time.Unix(int64(v), 0)
-		return t.Format("01/06")
-	}
-
-	for _, point := range tableData {
-		tslc.Push(point)
-	}
-
-	tslc.Draw()
-	fmt.Println(tslc.View())
+	return time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC)
 }

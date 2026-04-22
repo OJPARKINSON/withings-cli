@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -22,8 +21,8 @@ func LoadToken() (string, error) {
 		log.Fatal("Auth failed please try login first, ", err)
 	}
 
-	expiresTime := time.Unix(config.ExpiresAt, 0)
-	fmt.Println(expiresTime,  time.Now())
+	// expiresTime := time.Unix(config.ExpiresAt, 0)
+	// fmt.Println(expiresTime,  time.Now())
 
 	if config.ExpiresAt < time.Now().Unix() {
 		config, err := refresh(context.Background(), config.RefreshToken)
