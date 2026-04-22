@@ -39,7 +39,11 @@ func chartPrintMeasurements(measureGroups []MeasureGroup) {
 		}
 	}
 
-	tslc := timeserieslinechart.New(50, 5, timeserieslinechart.WithYRange(minVal, maxVal), timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
+	margin := (maxVal - minVal) * 0.05
+	minVal -= margin
+	maxVal += margin
+
+	tslc := timeserieslinechart.New(50, 15, timeserieslinechart.WithYRange(minVal, maxVal), timeserieslinechart.WithYLabelFormatter(func(i int, v float64) string {
 		return fmt.Sprintf("%.1f kg", v)
 	}))
 
@@ -52,6 +56,6 @@ func chartPrintMeasurements(measureGroups []MeasureGroup) {
 		tslc.Push(point)
 	}
 
-	tslc.DrawBraille()
+	tslc.Draw()
 	fmt.Println(tslc.View())
 }
